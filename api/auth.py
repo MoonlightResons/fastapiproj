@@ -65,3 +65,16 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     access_token = create_access_token(user.id)
     return {'access_token': access_token, 'token_type': 'Bearer'}
+
+
+@router.get('/auth/profile', tags=['auth'])
+def get_profile(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).get(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
+    return user
+
+
+@router.get('/auth/current_user', response_model=UserProfile, tags=['auth'])
+def get_logged_in_user(current_user: User = Depends(get_current_user)):
+    return current_user

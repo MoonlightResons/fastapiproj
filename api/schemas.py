@@ -33,8 +33,13 @@ class PostBase(BaseModel):
     title: str
     content: str
 
+class PostDelete(BaseModel):
+    pass
+
+
 class PostUpdate(PostBase):
     pass
+
 
 class PostCreate(PostBase):
     title: str
