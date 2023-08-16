@@ -33,6 +33,8 @@ class PostBase(BaseModel):
     title: str
     content: str
 
+class PostUpdate(PostBase):
+    pass
 
 class PostCreate(PostBase):
     title: str
