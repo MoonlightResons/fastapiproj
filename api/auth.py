@@ -4,9 +4,9 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 
-from db.models import User
+from db.models import User, Post
 from core.database import get_db
-from .schemas import UserRegistration, UserLogin, UserProfile
+from .schemas import UserRegistration, UserLogin, UserProfile, PostResponse, UserWithPosts
 from core.security import verify_password, create_access_token, decode_acccess_token, get_password_hash
 
 
@@ -67,14 +67,31 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return {'access_token': access_token, 'token_type': 'Bearer'}
 
 
-@router.get('/auth/profile', tags=['auth'])
+@router.get('/auth/profile/{user_id}', response_model=UserWithPosts, tags=['auth'])
 def get_profile(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).get(user_id)
-    if not user:
+    user_info = db.query(User).get(user_id)
+    if not user_info:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
-    return user
+
+    user_posts = [
+        PostResponse(
+            id=post.id, title=post.title, content=post.content, author=user_info
+        )
+        for post in user_info.posts
+    ]
+
+    user_with_posts = UserWithPosts(user_profile=user_info, user_posts=user_posts)
+    return user_with_posts
 
 
-@router.get('/auth/current_user', response_model=UserProfile, tags=['auth'])
-def get_logged_in_user(current_user: User = Depends(get_current_user)):
-    return current_user
+@router.get('/auth/current_user', response_model=UserWithPosts, tags=['auth'])
+def get_logged_in_user(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_posts = [
+        PostResponse(
+            id=post.id, title=post.title, content=post.content, author=current_user
+        )
+        for post in current_user.posts
+    ]
+
+    user_with_posts = UserWithPosts(user_profile=current_user, user_posts=user_posts)
+    return user_with_posts

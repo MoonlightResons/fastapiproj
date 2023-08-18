@@ -14,7 +14,7 @@ class User(Base):
 
     posts = relationship("Post", back_populates="author")
     liked_posts = relationship("Post", secondary='post_like', back_populates="liked_by")
-
+    favorite_posts = relationship("Post", secondary='post_favorite', back_populates="favorite_by")
 
 
 post_like = Table(
@@ -22,6 +22,13 @@ post_like = Table(
     Base.metadata,
     Column("user_id", Integer, ForeignKey("users.id")),
     Column("post_id", Integer, ForeignKey("posts.id"))
+)
+
+post_favorite = Table(
+    "post_favorite",
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey("users.id")),
+    Column("fav_id", Integer, ForeignKey("posts.id"))
 )
 
 
@@ -35,3 +42,4 @@ class Post(Base):
 
     author = relationship("User", back_populates="posts")
     liked_by = relationship("User", secondary='post_like', back_populates="liked_posts")
+    favorite_by = relationship("User", secondary='post_favorite', back_populates="favorite_posts")

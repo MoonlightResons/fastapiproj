@@ -33,6 +33,7 @@ class PostBase(BaseModel):
     title: str
     content: str
 
+
 class PostDelete(BaseModel):
     pass
 
@@ -61,3 +62,10 @@ class PostWithAuthorResponse(PostResponse):
 class LikedPostResponse(BaseModel):
     liked_post: List[PostResponse]
 
+
+class UserWithPosts(BaseModel):
+    user_profile: UserProfile
+    user_posts: List[PostResponse]
+
+    class Config:
+        from_attributes = True
