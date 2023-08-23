@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from db.models import User, Post
 from core.database import get_db
 from .schemas import UserRegistration, UserLogin, UserProfile, PostResponse, UserWithPosts
-from core.security import verify_password, create_access_token, decode_acccess_token, get_password_hash
+from core.security import verify_password, create_access_token, decode_access_token, get_password_hash
 
 
 router = APIRouter()
@@ -15,8 +15,31 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')
 
 
+EMAIL_HUNTER_API_KEY = 'fb79abfb32d8042d0b5273e47d2a5fbe3f4091f4'
+EMAIL_HUNTER_URL = 'https://api.emailhunter.co/v2/email-verifier'
+
+
+def verify_email(email):
+    params = {
+        'email': email,
+        'api_key': EMAIL_HUNTER_API_KEY
+    }
+
+    response = requests.get(EMAIL_HUNTER_URL, params=params)
+    data = response.json()
+
+    if 'data' in data and 'status' in data['data']:
+        status = data['data']['status']
+        if status == 'valid':
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
-    decoded_token = decode_acccess_token(token)
+    decoded_token = decode_access_token(token)
     if decoded_token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -42,12 +65,16 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 @router.post('/auth/register/', response_model=UserProfile, tags=['auth'])
 def register(user: UserRegistration, db: Session = Depends(get_db)):
-    existitng_user = db.query(User).filter(User.username == user.username).first()
-    if existitng_user:
+    existing_user = db.query(User).filter(User.username == user.username).first()
+    if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Username already taken')
-    existitng_email = db.query(User).filter(User.email == user.email).first()
-    if existitng_email:
+
+    existing_email = db.query(User).filter(User.email == user.email).first()
+    if existing_email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Email already taken')
+
+    if not verify_email(user.email):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Invalid email address')
 
     new_user = User(username=user.username, email=user.email, fullname=user.fullname)
     new_user.password = get_password_hash(user.password)

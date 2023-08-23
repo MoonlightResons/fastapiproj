@@ -7,8 +7,9 @@ from starlette import status
 from core.database import get_db
 from db.models import User
 
+
 SECRET_KEY = "asflregkerke;1241tfew"
-ALGORIHM = "HS256"
+ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
@@ -42,13 +43,13 @@ def get_password_hash(password):
 def create_access_token(user_id: int, expires_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES):
     expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
     payload = {"sub": str(user_id), "exp": expire}
-    encoded_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORIHM)
+    encoded_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def decode_acccess_token(token: str):
+def decode_access_token(token: str):
     try:
-        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORIHM])
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return decoded_token
     except JWTError:
         return None
