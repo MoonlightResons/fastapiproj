@@ -6,9 +6,11 @@ from sqlalchemy.orm import Session
 from starlette import status
 from core.database import get_db
 from db.models import User
+import bcrypt
 
 
 SECRET_KEY = "asflregkerke;1241tfew"
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -24,7 +26,8 @@ def get_user(username: str, db: Session = Depends(get_db)):
 
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    password_byte_enc = plain_password.encode('utf-8')
+    return bcrypt.checkpw(password = password_byte_enc , hashed_password = hashed_password)
 
 
 def authentificate_user(username: str, password: str):
@@ -36,13 +39,23 @@ def authentificate_user(username: str, password: str):
     return user
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def hash_password(password):
+    pwd_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password=pwd_bytes, salt=salt)
+    return hashed_password
 
 
 def create_access_token(user_id: int, expires_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES):
     expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
     payload = {"sub": str(user_id), "exp": expire}
+    encoded_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def create_refresh_token(user_id: int, expires_days: int = REFRESH_TOKEN_EXPIRE_DAYS):
+    expire = datetime.utcnow() + timedelta(days=expires_days)
+    payload = {"sub": str(user_id), "exp": expire, "type": "refresh"}
     encoded_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
